@@ -37,7 +37,10 @@ except FileNotFoundError:
 while True:
     racemap = "lakeside"  # TODO: load based on mapId here
     points = racedata[racemap]
-    previous = racehistory.get(racemap, [None])[-1]
+    previous = racehistory.get(racemap)
+    if previous:
+        # Get your fastest record time
+        previous = sorted(previous, key=lambda x: x[-1])[0]
 
     i = 0
     last = None
@@ -78,12 +81,11 @@ while True:
     print("Race complete!")
     # TODO: clean this mess up. probably better ways to manage the history
     if not previous:
-        previous = times
-        racehistory[racemap] = [times]
+        racehistory[racemap] = []
     elif times[-1] < previous[-1]:
         print("New record!")
-        previous = times
-        racehistory[racemap].append(times)
+
+    racehistory[racemap].append(times)
     with open("racehistory.json", "w") as f:
         f.write(json.dumps(racehistory))
 
