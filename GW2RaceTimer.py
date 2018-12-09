@@ -45,6 +45,8 @@ while True:
     # Race loop
     while i < len(points):
         time.sleep(tickrate)
+        if starttime:
+            print("\r{0}".format(formattime(time.time() - starttime)), end="")
 
         coord = struct.unpack("IL3f", shmem)[2:5]
 
@@ -68,7 +70,7 @@ while True:
                 splitchange = "[{0:+.3f}]".format(times[i] - previous[i])
             else:
                 splitchange = ""
-            print("Gate {0:2d}: {1}  {2}".format(i, formattime(times[i]), splitchange))
+            print("\rGate {0:2d}: {1}  {2}".format(i, formattime(times[i]), splitchange))
             i += 1
 
     print("Race complete!")
