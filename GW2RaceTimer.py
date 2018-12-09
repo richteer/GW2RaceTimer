@@ -13,6 +13,7 @@ parser = argparse.ArgumentParser(description="", epilog="Available maps: "+", ".
 parser.add_argument("-t", "--tickrate", type=float, default=60, required=False, help="How often to check position updates (higher is more often)")
 parser.add_argument("-r", "--radius", type=float, default=10, required=False, help="Radius threshold for checkpoints (game uses ~7.5, increasing this may mess with splits)")
 parser.add_argument("-s", "--hide-stopwatch", action="store_false", help="Don't print the stopwatch timer to stdout")
+parser.add_argument("-S", "--hide-speed", action="store_false", help="Don't print the current velocity estimate (this also disables speed)")
 parser.add_argument("map", choices=racedata.keys(), help="Map to load the checkpoint and timer information for")
 
 args = parser.parse_args()
@@ -20,6 +21,7 @@ args = parser.parse_args()
 tickrate = 1 / args.tickrate
 radius = args.radius
 show_stopwatch = args.hide_stopwatch
+show_speed = args.hide_speed
 racemap = args.map
 
 shmem = mmap.mmap(0, 20, "MumbleLink", mmap.ACCESS_READ)
@@ -51,14 +53,22 @@ while True:
     # Race loop
     while i < len(points):
         time.sleep(tickrate)
-        if starttime and show_stopwatch:
-            print("\r{0}".format(formattime(time.time() - starttime)), end="")
 
         coord = struct.unpack("IL3f", shmem)[2:5]
+
+        if starttime and show_stopwatch:
+            print("\r{0}".format(formattime(time.time() - starttime)), end="")
 
         # Drop this if we haven't moved
         if last == coord:
             continue
+
+        if starttime and show_stopwatch and show_speed:
+            velocity = distance.euclidean(coord, last) / tickrate
+            # Cutoff speed below threshold due to potential floating point inaccuracies, etc
+            if velocity < 0.5:
+                velocity = 0.0
+            print("  {0:6.2f} u/s".format(velocity), end="")
         last = coord
 
         if distance.euclidean(coord, points[i]) <= radius:
