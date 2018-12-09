@@ -9,16 +9,18 @@ from scipy.spatial import distance
 with open("race_checkpoints.json", "r") as f:
     racedata = json.loads(f.read())
 
-parser = argparse.ArgumentParser(description="")
+parser = argparse.ArgumentParser(description="", epilog="Available maps: "+", ".join(racedata.keys()))
 parser.add_argument("-t", "--tickrate", type=float, default=60, required=False, help="How often to check position updates (higher is more often)")
 parser.add_argument("-r", "--radius", type=float, default=10, required=False, help="Radius threshold for checkpoints (game uses ~7.5, increasing this may mess with splits)")
 parser.add_argument("-s", "--hide-stopwatch", action="store_false", help="Don't print the stopwatch timer to stdout")
+parser.add_argument("map", choices=racedata.keys(), help="Map to load the checkpoint and timer information for")
 
 args = parser.parse_args()
 
 tickrate = 1 / args.tickrate
 radius = args.radius
 show_stopwatch = args.hide_stopwatch
+racemap = args.map
 
 shmem = mmap.mmap(0, 20, "MumbleLink", mmap.ACCESS_READ)
 print("Connected!")
@@ -35,7 +37,6 @@ except FileNotFoundError:
 # Main loop
 # TODO: close when GW2 closes?
 while True:
-    racemap = "lakeside"  # TODO: load based on mapId here
     points = racedata[racemap]
     previous = racehistory.get(racemap)
     if previous:
