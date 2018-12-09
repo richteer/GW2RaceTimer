@@ -11,7 +11,7 @@ with open("race_checkpoints.json", "r") as f:
 
 parser = argparse.ArgumentParser(description="")
 parser.add_argument("-t", "--tickrate", type=float, default=60, required=False, help="How often to check position updates (higher is more often)")
-parser.add_argument("-r", "--radius", type=float, default=7.5, required=False, help="Radius threshold for checkpoints (game uses ~7.5, increasing this may mess with splits)")
+parser.add_argument("-r", "--radius", type=float, default=10, required=False, help="Radius threshold for checkpoints (game uses ~7.5, increasing this may mess with splits)")
 
 args = parser.parse_args()
 
@@ -24,11 +24,18 @@ print("Connected!")
 def formattime(x):
     return "{0: 2d}:{1:06.3f}".format(int(x // 60), x % 60)
 
-previous = []
+try:
+    with open("racehistory.json", "r") as f:
+        racehistory = json.loads(f.read())
+except FileNotFoundError:
+    racehistory = {}
+
 # Main loop
 # TODO: close when GW2 closes?
 while True:
-    points = racedata["lakeside"] # TODO: load based on mapId here
+    racemap = "lakeside"  # TODO: load based on mapId here
+    points = racedata[racemap]
+    previous = racehistory.get(racemap, [None])[-1]
 
     i = 0
     last = None
@@ -57,14 +64,26 @@ while True:
                 continue
 
             times.append(time.time() - starttime)
-            print("Gate {0: 2d}: {1}".format(i, formattime(times[i])))
+            if previous:
+                splitchange = "[{0:+.3f}]".format(times[i] - previous[i])
+            else:
+                splitchange = ""
+            print("Gate {0:2d}: {1}  {2}".format(i, formattime(times[i]), splitchange))
             i += 1
 
+    print("Race complete!")
+    # TODO: clean this mess up. probably better ways to manage the history
     if not previous:
         previous = times
+        racehistory[racemap] = [times]
     elif times[-1] < previous[-1]:
         print("New record!")
         previous = times
+        racehistory[racemap].append(times)
+    with open("racehistory.json", "w") as f:
+        f.write(json.dumps(racehistory))
+
+    time.sleep(3) # Cooldown so we don't accidentally start over
 
     print("")
 shmem.close()
