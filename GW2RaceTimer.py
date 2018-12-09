@@ -18,6 +18,13 @@ args = parser.parse_args()
 tickrate = 1 / args.tickrate
 radius = args.radius
 
+shmem = mmap.mmap(0, 20, "MumbleLink", mmap.ACCESS_READ)
+print("Connected!")
+
+def formattime(x):
+    return "{0: 2d}:{1:06.3f}".format(int(x // 60), x % 60)
+
+previous = []
 # Main loop
 # TODO: close when GW2 closes?
 while True:
@@ -27,13 +34,12 @@ while True:
     last = None
     starttime = 0
     first = True
+    print("Waiting for first checkpoint...")
     # Race loop
     while i < len(points):
         time.sleep(tickrate)
 
-        shmem = mmap.mmap(0, 20, "MumbleLink", mmap.ACCESS_READ)
         coord = struct.unpack("IL3f", shmem)[2:5]
-        shmem.close()
 
         # Drop this if we haven't moved
         if last == coord:
@@ -41,8 +47,24 @@ while True:
         last = coord
 
         if distance.euclidean(coord, points[i]) <= radius:
+            # Handle the first gate a little differently - start the timer because that's the best we can do for now
             if first:
                 starttime = time.time()
+                times = [0.0] # TODO: this is here so the array is balanced, but we shouldn't need this
                 first = False
+                print("Timer start!")
+                i += 1
+                continue
+
+            times.append(time.time() - starttime)
+            print("Gate {0: 2d}: {1}".format(i, formattime(times[i])))
             i += 1
-            print("Gate {}: {}".format(i, time.time() - starttime))
+
+    if not previous:
+        previous = times
+    elif times[-1] < previous[-1]:
+        print("New record!")
+        previous = times
+
+    print("")
+shmem.close()
