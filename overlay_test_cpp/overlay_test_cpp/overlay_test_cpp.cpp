@@ -63,7 +63,14 @@ DWORD WINAPI WndPositioner()
 		if (GWWndInfo.dwWindowStatus == WS_ACTIVECAPTION)
 		{
 			ShowWindow(hCurrent, SW_NORMAL);
-			SetWindowPos(hCurrent, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+			SetWindowPos(
+				hCurrent,
+				HWND_TOPMOST,
+				GWWndPlacement.rcNormalPosition.left,
+				GWWndPlacement.rcNormalPosition.top,
+				GWWndPlacement.rcNormalPosition.right - GWWndPlacement.rcNormalPosition.left,
+				GWWndPlacement.rcNormalPosition.bottom - GWWndPlacement.rcNormalPosition.top,
+				0);
 			bTop = TRUE;
 		}
 		else if(bTop != FALSE)
