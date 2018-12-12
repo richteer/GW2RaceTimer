@@ -25,6 +25,7 @@ DWORD WINAPI WndPositioner()
 	WINDOWINFO CurrentWndInfo;
 	WINDOWPLACEMENT CurrentWndPlacement;
 	WINDOWPLACEMENT GWWndPlacement;
+	RECT GWRect;
 	BOOL bMin = FALSE;
 	BOOL bTop = FALSE;
 
@@ -47,6 +48,7 @@ DWORD WINAPI WndPositioner()
 		}
 
 		// Access to window informations
+		GetClientRect(hGW2, &GWRect);
 		GetWindowInfo(hGW2, &GWWndInfo);
 		GetWindowInfo(hCurrent, &CurrentWndInfo);
 		GetWindowPlacement(hCurrent, &CurrentWndPlacement);
@@ -62,15 +64,24 @@ DWORD WINAPI WndPositioner()
 		// TODO: readjust to be exactly on top of GW2's window rect
 		if (GWWndInfo.dwWindowStatus == WS_ACTIVECAPTION)
 		{
-			ShowWindow(hCurrent, SW_NORMAL);
-			SetWindowPos(
-				hCurrent,
-				HWND_TOPMOST,
-				GWWndPlacement.rcNormalPosition.left,
-				GWWndPlacement.rcNormalPosition.top,
-				GWWndPlacement.rcNormalPosition.right - GWWndPlacement.rcNormalPosition.left,
-				GWWndPlacement.rcNormalPosition.bottom - GWWndPlacement.rcNormalPosition.top,
-				0);
+			ShowWindow(hCurrent, GWWndPlacement.showCmd);
+		
+			if (GWWndPlacement.showCmd == SW_NORMAL || GWWndPlacement.showCmd == SW_MAXIMIZE)
+			{
+				// Get screen coordinates
+				ClientToScreen(hGW2, (LPPOINT)&GWRect.left);
+				ClientToScreen(hGW2, (LPPOINT)&GWRect.right);
+
+				SetWindowPos(
+					hCurrent,
+					HWND_TOPMOST,
+					GWRect.left,
+					GWRect.top,
+					GWRect.right - GWRect.left,
+					GWRect.bottom - GWRect.top,
+					SWP_NOACTIVATE);
+			}
+
 			bTop = TRUE;
 		}
 		else if(bTop != FALSE)
@@ -124,8 +135,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	// Get window handles
 	hCurrent = FindWindow(szWindowClass, szTitle);
 
+	// Set window style (TODO: Make this a function)
+	LONG lStyle = GetWindowLong(hCurrent, GWL_STYLE);
+	lStyle &= ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZE | WS_MAXIMIZE | WS_SYSMENU);
+	SetWindowLong(hCurrent, GWL_STYLE, lStyle);
+
 	LONG cur_style = GetWindowLong(hCurrent, GWL_EXSTYLE);
-	SetWindowLong(hCurrent, GWL_EXSTYLE, cur_style | WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_NOACTIVATE);
+	cur_style &= ~(WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE);
+	cur_style |= WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_NOACTIVATE;
+	SetWindowLong(hCurrent, GWL_EXSTYLE, cur_style);
 
 	if (hCurrent == NULL)
 	{
@@ -173,7 +191,8 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_OVERLAY_TEST_CPP));
     wcex.hCursor        = LoadCursor(nullptr, IDC_ARROW);
     wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
-    wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_OVERLAY_TEST_CPP);
+    //wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_OVERLAY_TEST_CPP);
+	wcex.lpszMenuName = NULL;
     wcex.lpszClassName  = szWindowClass;
     wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
