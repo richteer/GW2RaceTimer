@@ -1,0 +1,27 @@
+High Priority:
+
+= Monitoring Process =
+	- Investigate if the process to monitor the character's positioning should be migrated to C# or a C/C++ dll.
+
+= GUI =
+	- Find a way to overlay exactly the GW2 window
+	- Design a GUI
+	- Render the GUI
+	- Make the GUI interactive
+
+= Logs =
+	- Define a format for the logs
+	- Save and load logs
+	- Create an external parser for users
+
+
+
+Low Priority:
+
+= GUI =
+	- Handle DPI scaling
+
+= Ghost =
+	- Get the game's projection matrix
+	- Create some sort of model for the Ghost
+	- Render the Ghost in realtime based on recorded Logs
